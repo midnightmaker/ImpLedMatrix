@@ -1,0 +1,402 @@
+﻿<html manifest="manifest.appcache">
+manifest="manifest.appcache"
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>dotMatrix</title>
+
+        <link rel="apple-touch-icon" href="images/garage_icon.png"/>
+
+    <meta name="viewport" content="width=device-width, minimum-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <link rel="apple-touch-icon" href="images/DragonFlyPatternSmall.png"/>
+
+    <link rel="stylesheet" href="//code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.css" />
+    <script src="//code.jquery.com/jquery-1.10.2.min.js" ></script>
+    <script src="//code.jquery.com/mobile/1.4.0/jquery.mobile-1.4.0.min.js" ></script>
+
+
+  <style>
+
+    .centeredDiv {
+      text-align: center;
+      
+    }
+
+    .roundedcell {
+      margin:5px;
+      border: 1px solid #000;
+      border-radius : 5px;
+      text-align : center;
+      color : black;
+      text-decoration :none
+
+    }
+
+    .smallerImage {
+      height: auto;
+      width: 250px;
+    }
+
+    a { 
+      text-decoration : none; 
+      color : #000; 
+
+    }
+
+    .gradeButton {
+    }
+
+    .diagnosticButton {
+    }
+
+
+
+
+  </style>
+
+  <script>
+
+    var LOCAL_STORAGE_KEY = "Awardometer_4";
+
+    var setupInfo = {
+      
+      name: "Your Name... or not!",
+      impURL: "https://agent.electricimp.com/yourURLKeyHere",
+      impAPIKey: "Your Imp API Key Here",
+      smsConfig: {
+        request: "persistValues",
+        smsApiKey: "Your SendHub Key",
+        smsGroupID: "Your SMS Group ID",
+        smsUserName: "Your Cell Number"
+      }
+    };
+
+    
+    var imageCounter = 0;
+    var cycleCount = 0;
+    var gradeLevel = "A";
+
+    $(document).ready( function() {
+      
+      // Initialize local storage variables. If this is the first time the application is run
+      // set the defaults to storage
+      if( localStorage.getItem( LOCAL_STORAGE_KEY ) == null ) {
+        localStorage.setItem( LOCAL_STORAGE_KEY, JSON.stringify( setupInfo ) );
+      }
+      else {
+        setupInfo = JSON.parse(  localStorage.getItem( LOCAL_STORAGE_KEY ) );
+      }
+    });
+
+    $(document).on("pageinit", "#settings", function () {
+
+      $("#personName").val(setupInfo.name );
+      $("#impURL").val(setupInfo.impURL);
+      $("#impAPIKey").val(setupInfo.impAPIKey);
+      $("#smsGroupID").val( setupInfo.smsConfig.smsGroupID );
+      $("#smsUserName").val( setupInfo.smsConfig.smsUserName );
+      $("#smsApiKey").val( setupInfo.smsConfig.smsApiKey );
+
+      $("#saveSettings").click(function () {
+
+        setupInfo.name = $("#personName").val();
+        setupInfo.impURL = $("#impURL").val();
+        setupInfo.impAPIKey = $("#impAPIKey").val();
+        setupInfo.smsConfig.smsGroupID = $("#smsGroupID").val();
+        setupInfo.smsConfig.smsUserName = $("#smsUserName").val();
+        setupInfo.smsConfig.smsApiKey = $("#smsApiKey").val();
+
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(setupInfo));
+        //Submit to imp
+        alert("Save Settings " + setupInfo.impAPIKey );
+        var jsonString = JSON.stringify(setupInfo.smsConfig );
+        console.log("POST : " + setupInfo.impURL + "?timestamp=" + new Date().getTime());
+        console.log("JSON : " + jsonString);
+        $.ajax({
+          type: 'POST',
+          url: setupInfo.impURL+"?timestamp=" + new Date().getTime(),
+          data: jsonString,
+          headers: { "cache-control": "no-cache", "x-apikey": setupInfo.impAPIKey },
+          success: function (jqXHR) {
+            // successful request; do something with the data
+            //$('#ajaxResponse').html("<p ><strong>Request OK:</strong><br/>" + JSON.stringify(jqXHR));
+
+          },
+          error: function (jqXHR, textStatus, errorThrown) {
+            // failed request; give feedback to user
+            // $('#ajaxResponse').html("<p ><strong>Request Failed!</strong><br/>textStatus: " + textStatus + "<br/>Error Thrown: " + errorThrown + "</p>");
+          }
+        }); //ajx
+
+      });
+
+    });
+
+    $(document).on("pageinit", "#subjectSubmit", function () {
+
+      
+
+    });
+
+
+    $(document).on("pageinit", "#index", function () {
+
+      $("#submit").click(function () {
+
+        var addGoal = { "request": "addGoalStep", "stepValue": gradeLevel };
+
+        $.ajax({
+          type: 'POST',
+          url: setupInfo.impURL + "?timestamp=" + new Date().getTime(),
+          data: JSON.stringify(addGoal),
+          headers: { "cache-control": "no-cache", "x-apikey": setupInfo.impAPIKey },
+          success: function (jqXHR) {
+            // successful request; do something with the data
+            //$('#ajaxResponse').html("<p ><strong>Request OK:</strong><br/>" + JSON.stringify(jqXHR));
+
+          },
+          error: function (jqXHR, textStatus, errorThrown) {
+            // failed request; give feedback to user
+            // $('#ajaxResponse').html("<p ><strong>Request Failed!</strong><br/>textStatus: " + textStatus + "<br/>Error Thrown: " + errorThrown + "</p>");
+          }
+        }); //ajx
+
+
+      });
+
+
+      $("#checkPin").click( function(event) {
+
+        if( $("#pinNumber").val() == "1234" ) {
+          // Pin checks out ok so continue as normal
+          $("#submit").click();
+          
+        }
+        else {
+          event.preventDefault();
+          $( "#popupError" ).popup( "open" );
+        }
+          
+      });
+
+      $(".gradeButton").click(function () {
+        gradeLevel = this.id;
+        // if( this.id == "restartGoal" )
+        
+
+      });
+
+      //$("#dragonflymap area").click(function () {
+      $(".diagnosticButton").click(function () {
+        
+        var clickedButton = { "request" : "buttonPressed", "button": this.id };
+
+        $.ajax({
+          type: 'POST',
+          url: setupInfo.impURL + "?timestamp=" + new Date().getTime(),
+          data: JSON.stringify( clickedButton ),
+          headers: { "cache-control": "no-cache", "x-apikey": setupInfo.impAPIKey },
+          success: function (jqXHR) {
+            // successful request; do something with the data
+            //$('#ajaxResponse').html("<p ><strong>Request OK:</strong><br/>" + JSON.stringify(jqXHR));
+
+          },
+          error: function (jqXHR, textStatus, errorThrown) {
+            // failed request; give feedback to user
+            // $('#ajaxResponse').html("<p ><strong>Request Failed!</strong><br/>textStatus: " + textStatus + "<br/>Error Thrown: " + errorThrown + "</p>");
+          }
+        }); //ajx
+
+
+      });
+
+    });
+
+  </script>
+</head>
+<body>
+
+  <!-- =============================================== Home Page ========================================================== -->
+  <div data-role="page" id="index">
+
+	<div data-role="header">
+		<h4>Rewardometer</h4>
+	</div><!-- /header -->
+
+	<div data-role="content">	
+
+    <!-- Hat Icon from http://www.flaticon.com/free-icon/graduation-hat_422 -->
+
+
+    <div class="ui-grid-a">
+      <div class="ui-block-a " >
+        <div id="superA" class="centeredDiv gradeButton"><a href="#subjectSubmit" data-role="button" data-inline="true" ><img src="images/GraduationCap.png" /><br />Super A</a></div>
+      </div>
+      <div class="ui-block-b">
+        <div id="A" class="centeredDiv gradeButton"><a href="#subjectSubmit" data-role="button" data-inline="true" ><img src="images/GraduationCap.png" /><br />A</a></div>
+      </div>
+      <div class="ui-block-a">
+        <div id="B" class="centeredDiv gradeButton"><a href="#subjectSubmit" data-role="button" data-inline="true" ><img src="images/GraduationCap.png" /><br />B</a></div>
+      </div>
+      <div class="ui-block-b">
+        <div id="C" class="centeredDiv gradeButton"><a href="#subjectSubmit" data-role="button" data-inline="true" ><img src="images/GraduationCap.png" /><br />C</a></div>
+      </div>
+	  </div>
+      
+    <div class="centeredDiv">
+      <a href="#pinPage" id="restartGoal"  class="gradeButton ui-btn ui-btn-inline">Restart Goal</a>
+    </div>
+    <div id="debug"></div>
+
+	</div><!-- /content -->
+
+	<div data-role="footer" data-position="fixed" >
+    <div data-role="navbar" data-iconpos="left">
+     
+      <ul>
+		    <li><a data-role="button" data-corners="false" data-shadow="false" class="ui-btn-active ui-state-persist" href="#index" data-transition="slide"  data-icon="home" >Status</a></li>
+        <li><a data-role="button" data-corners="false" data-shadow="false" href="#settings" data-transition="slide"  data-icon="gear">Settings</a></li>
+        <li><a data-role="button" data-corners="false" data-shadow="false" href="#diagnostics" data-transition="slide"  data-icon="star">Diagnostics</a></li>
+     </ul> 
+    </div>
+		    
+	</div><!-- /footer -->
+</div><!-- /page -->
+
+  <!-- =============================================== Settings Page ========================================================== -->
+  <div data-role="page" id="settings">
+
+	  <div data-role="header">
+		  <h4>Settings</h4>
+	  </div><!-- /header -->
+
+	  <div data-role="content">	
+      
+        <strong>Name</strong><input type="text" id="personName" />
+        <strong>Imp URL</strong><input type="url" id="impURL"/>
+        <strong>Imp API Key</strong><input type="text" id="impAPIKey" />
+        <strong>SMS API Key</strong><input type="text" id="smsApiKey"/>
+        <strong>SMS Group ID</strong><input type="text" id="smsGroupID"/>
+        <strong>SMS Username</strong><input type="text" id="smsUserName"/>
+	    
+        <br />
+        <a href="#index" data-role="button" data-theme="a" id="saveSettings" >Save Settings</a>
+
+	  </div><!-- /content -->
+
+	  <div data-role="footer" data-position="fixed" >
+      <div data-role="navbar" data-iconpos="left">
+        <ul>
+		      <li><a data-role="button" data-corners="false" data-shadow="false" href="#index" data-transition="slide"  data-icon="home" >Home</a></li>
+          <li><a data-role="button" data-corners="false" data-shadow="false" class="ui-btn-active ui-state-persist" href="#settings" data-transition="slide"  data-icon="gear">Settings</a></li>
+          <li><a data-role="button" data-corners="false" data-shadow="false" href="#diagnostics" data-transition="slide"  data-icon="star">Diagnostics</a></li>
+       </ul> 
+      </div>
+		    
+	  </div><!-- /footer -->
+  </div><!-- /page -->
+
+  <!-- =============================================== Diagnostics Page ========================================================== -->
+  <div data-role="page" id="diagnostics">
+
+	  <div data-role="header">
+		  <h4>Diagnostics</h4>
+	  </div><!-- /header -->
+
+	  <div data-role="content">	
+
+      <div class="centeredDiv">
+          <img class="smallerImage" src="images/DragonFlyPattern.png" usemap="#dragonflymap"/>
+            <map id="dragonflymap" name="dragonflymap">
+              <area class="diagnosticButton" id="leftFeeler" shape="circle" coords="145,20,30" />
+              <area class="diagnosticButton" id="rightFeeler" shape="circle" coords="200,51,30" />
+              <area class="diagnosticButton" id="face" shape="circle" coords="155,80,30" />
+              <area class="diagnosticButton" id="leftTopWing" shape="circle" coords="70,90,40" />
+              <area class="diagnosticButton" id="leftBottomWing" shape="circle" coords="50,150,40" />
+
+              <area class="diagnosticButton" id="rightTopWing" shape="circle" coords="200,150,40" />
+              <area class="diagnosticButton" id="rigthBottomWing" shape="circle" coords="170,200,40" />
+
+              <area class="diagnosticButton" id="thorax" shape="circle" coords="120,140,30" />
+              <area class="diagnosticButton" id="abdomen" shape="circle" coords="75,240,30" />
+              <area class="diagnosticButton" id="tip" shape="circle" coords="35,325,30" />
+        
+          </map>
+          
+        <a class="diagnosticButton" href="#index" id="resumeOperation" data-role ="button" data-theme ="a">Resume Pattern</a>
+        </div> <!-- Centered Div -->
+  	    
+
+	  </div><!-- /content -->
+
+	  <div data-role="footer" data-position="fixed" >
+      <div data-role="navbar" data-iconpos="left">
+        <ul>
+		      <li><a data-role="button" data-corners="false" data-shadow="false" href="#index" data-transition="slide"  data-icon="home" >Home</a></li>
+          <li><a data-role="button" data-corners="false" data-shadow="false" href="#settings" data-transition="slide"  data-icon="gear">Settings</a></li>
+          <li><a data-role="button" data-corners="false" data-shadow="false" href="#diagnostics" class="ui-btn-active ui-state-persist" data-transition="slideup"  data-icon="star">Diagnostics</a></li>
+       </ul> 
+      </div>
+		    
+	  </div><!-- /footer -->
+  </div><!-- /page -->
+  
+  <!-- =============================================== Subject Submit ========================================================== -->
+  <div data-role="page" id="subjectSubmit" data-dialog="true" data-close-btn="none">
+
+	    <div data-role="header">
+		    <h4>Subject</h4>
+	    </div><!-- /header -->
+
+	    <div data-role="content" >	
+
+          <label for="select-choice-0" class="select">Subject:</label>
+          <select name="select-choice-0" id="select-choice-0">
+              <option value="art">Art</option>
+              <option value="biology">Biology</option>
+              <option value="language">Languages</option>
+              <option value="math">Math</option>
+              <option value="science">Science</option>
+              <option value="socialstudy">Social Studies</option>
+              <option value="drawing">Engineering Drawing</option>
+          </select>
+          <button>Add new subject...</button>
+          <p></p>
+          <a href="#index" data-role="button" data-inline="true" data-rel="back">Cancel</a>
+          <a href="#index" data-role="button" data-inline="true" data-theme="b" id="submit" data-rel="back">Submit</a>
+      
+      </div><!-- /content -->
+	    
+  </div><!-- /page -->
+
+  <!-- =============================================== PIN Dialog for Goal Reset =========================================== -->
+  <div data-role="page" id="pinPage" data-dialog="true" data-close-btn="none">
+
+	    <div data-role="header">
+		    <h4>Enter your PIN</h4>
+	    </div><!-- /header -->
+
+	    <div data-role="content" >	
+
+          <label for="pinNumber"><strong>PIN Number</strong></label>
+          <input type="password" id="pinNumber"/>
+          <p></p>
+          <a href="#index" data-role="button" data-inline="true" data-rel="back">Cancel</a>
+          <a href="#index" data-role="button" data-inline="true" data-theme="b" id="checkPin" data-rel="back">Ok</a>
+
+        <div data-role="popup" id="popupError">
+          <a href="#" data-rel="back" data-role="button" data-theme="a" data-icon="delete" data-iconpos="notext" class="ui-btn-right" data-position-to="origin">Close</a>
+        <p>PIN Number did not match. Goal is not reset. Please try again. </p>
+        </div>
+
+      </div><!-- /content -->
+	    
+  </div><!-- /page -->
+  
+ <!-- =============================================== PIN Error Popup for Goal Reset =========================================== -->
+ 
+
+
+</body>
+</html>
